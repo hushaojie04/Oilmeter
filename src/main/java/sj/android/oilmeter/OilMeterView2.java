@@ -87,6 +87,8 @@ public class OilMeterView2 extends ImageView {
                     e.printStackTrace();
                 }
                 if (Math.abs(currentAngle - mAngle) < 1) {
+                    currentAngle = mAngle;
+                    post(myUIRunnable);
                     try {
                         synchronized (wait_object) {
                             Log.d("husj", " wait ");
