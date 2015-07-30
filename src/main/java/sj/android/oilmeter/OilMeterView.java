@@ -77,7 +77,7 @@ public class OilMeterView extends ImageView {
         pointInt = new int[pointBitmap.getHeight() * pointBitmap.getWidth()];
         int[] temp = new int[pointBitmap.getHeight() * pointBitmap.getWidth()];
         pointBitmap.getPixels(temp, 0, pointBitmap.getWidth(), 0, 0, pointBitmap.getWidth(), pointBitmap.getHeight());
-        //≥ı ºªØΩ«∂»°£
+        //ÔøΩÔøΩ ºÔøΩÔøΩÔøΩ«∂»°ÔøΩ
         rorateInt(pointInt, temp, 314);
 
         mState = new State(oilmeterInt);
@@ -120,7 +120,7 @@ public class OilMeterView extends ImageView {
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
         Paint paint = new Paint();
-        paint.setAntiAlias(true);    //œ˚≥˝æ‚≥›
+        paint.setAntiAlias(true);    //ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ
         mState.pushStack();
 //        Log.d("husj", "0 " + pointBitmap.getHeight() + " " + pointBitmap.getWidth());
 //        Log.d("husj", "0 " + pointByte.length + " " + pointBitmap.getHeight() * pointBitmap.getWidth());
@@ -234,14 +234,10 @@ public class OilMeterView extends ImageView {
     public static Bitmap scaleBitmap(Bitmap bitmap, int scaleWidth, int scaleHeight) {
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
-        // ¥¥Ω®≤Ÿ◊˜Õº∆¨”√µƒMatrix∂‘œÛ
         Matrix matrix = new Matrix();
-        // º∆À„Àı∑≈±»¿˝
         float sx = ((float) scaleWidth / w);
         float sy = ((float) scaleHeight / h);
-        // …Ë÷√Àı∑≈±»¿˝
         matrix.postScale(sx, sy);
-        // Ω®¡¢–¬µƒbitmap£¨∆‰ƒ⁄»› «∂‘‘≠bitmapµƒÀı∑≈∫ÛµƒÕº
         Bitmap scaleBmp = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
         return scaleBmp;
     }
@@ -249,14 +245,11 @@ public class OilMeterView extends ImageView {
     public Bitmap rorateBitmap(Bitmap bitmap, float angle) {
         int w = bitmap.getWidth();
         int h = bitmap.getHeight();
-        // ¥¥Ω®≤Ÿ◊˜Õº∆¨”√µƒMatrix∂‘œÛ
         Matrix matrix = new Matrix();
 //        matrix = matrix.setConcat()
-        // º∆À„Àı∑≈±»¿˝
-        // …Ë÷√Àı∑≈±»¿˝
 //        matrix.postRotate(angle);
         matrix.postRotate(angle, centerx , centery );
-        // Ω®¡¢–¬µƒbitmap£¨∆‰ƒ⁄»› «∂‘‘≠bitmapµƒÀı∑≈∫ÛµƒÕº
+        // ÔøΩÔøΩÔøΩÔøΩÔøΩ¬µÔøΩbitmapÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩ«∂ÔøΩ‘≠bitmapÔøΩÔøΩÔøΩÔøΩÔøΩ≈∫ÔøΩÔøΩÕº
         Bitmap scaleBmp = Bitmap.createBitmap(bitmap, 0, 0, w, h, matrix, true);
         return scaleBmp;
     }
@@ -272,12 +265,9 @@ public class OilMeterView extends ImageView {
         try {
             int count = 0;
             byte[] buffer = new byte[1024];
-            //µ»∫≈∫Û√Ê «Õº∆¨µƒ¬∑æ∂
-            //œ¬√Ê «Ω´Õº∆¨∂¡≥…◊÷Ω⁄£¨∂¯«“ «“‘1024Œ™µ•Œª∂¡µƒ
             InputStream inputStream = getResources().openRawResource(R.raw.point);
-//∂®“Â’˚ ˝¿‡–Õ∂‘œÛ
+//ÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÔøΩÕ∂ÔøΩÔøΩÔøΩ
             int number;
-            //¿˚”√—≠ª∑∑Ω ΩΩ´Õº∆¨∂¡ÕÍ’˚
             while ((number = inputStream.read(buffer)) > 0) {
                 count += number;
             }
@@ -320,7 +310,6 @@ public class OilMeterView extends ImageView {
         }
 
         private void pushStack() {
-            //±£¥Êœ÷≥°
             int[] temp = new int[currentByte.length];
             for (int i = 0; i < currentByte.length; i++) {
                 temp[i] = currentByte[i];
@@ -329,8 +318,6 @@ public class OilMeterView extends ImageView {
         }
 
         private void popStack() {
-            //ª÷∏¥œ÷œÛ
-            //±£¥Êœ÷≥°
             int[] temp = stack.pop();
             for (int i = 0; i < currentByte.length; i++) {
                 currentByte[i] = temp[i];

@@ -118,7 +118,6 @@ public class OilMeterView2 extends ImageView {
     }
 
     private void rotate() {
-////创建操作图片是用的matrix对象
         Matrix matrix = new Matrix();
         matrix.setRotate((float) currentAngle, mBitmap.getWidth() / 2, mBitmap.getHeight() / 2);
         matrix.preConcat(default_Matrix);

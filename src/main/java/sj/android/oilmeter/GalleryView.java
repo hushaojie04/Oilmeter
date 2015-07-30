@@ -7,6 +7,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
 import android.media.Image;
 import android.os.AsyncTask;
 import android.provider.MediaStore;
@@ -99,43 +101,51 @@ public class GalleryView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        Paint paint = new Paint();
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
+        canvas.drawPaint(paint);
+        paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
+
         if (itemWidth == 0)
             itemWidth = getMeasuredWidth() / 3;
-        Log.d("husj", "onDraw " + mCurrentPosition);
-        Paint paint = new Paint();
-        paint.setAntiAlias(true);    //Ïû³ý¾â³Ý
+        paint.setAntiAlias(true);    //
         float left = scrollX, top = 0;
         top = getMeasuredHeight() / 3;
         int position = mCurrentPosition;
         if (progress != -1) {
             for (int i = 0; i < 3; i++) {
-                position++;
                 if (position >= 0 && position <= progress) {
+                    Log.d("husj", "onDraw " + position);
                     Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
                     if (bb != null) {
                         canvas.drawBitmap(bb, left, top, paint);
                         left += bb.getWidth();
 //                    top += bb.getHeight();
                     }
+                    bb.recycle();
                 }
+                position++;
             }
             if (scrollX > 0) {
                 position = mCurrentPosition - 1;
                 if (position >= 0 && position <= progress) {
+                    Log.d("husj", "onDraw " + position);
                     Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
                     if (bb != null) {
                         canvas.drawBitmap(bb, scrollX - itemWidth, top, paint);
                         left += bb.getWidth();
                     }
+                    bb.recycle();
                 }
             } else if (scrollX < 0) {
-                position = mCurrentPosition + 1;
                 if (position >= 0 && position <= progress) {
+                    Log.d("husj", "onDraw " + position);
                     Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
                     if (bb != null) {
                         canvas.drawBitmap(bb, left, top, paint);
                         left += bb.getWidth();
                     }
+                    bb.recycle();
                 }
             }
 
@@ -160,21 +170,16 @@ public class GalleryView extends View {
                     if (scrollX > 0) {
                         Log.d("husj", "mCurrentPosition--");
                         if (mCurrentPosition > 0)
-                            mCurrentPosition++;
-                        else
-                            break;
+                            mCurrentPosition--;
                     } else {
                         Log.d("husj", "mCurrentPosition++");
                         if (mCurrentPosition < progress)
-                            mCurrentPosition--;
-                        else
-                            break;
+                            mCurrentPosition++;
                     }
                     scrollX = 0;
                 } else {
-                    scrollX = event.getX() - x0 ;
-                    lastScrollX = event.getX() - x0;
-
+                    scrollX += event.getX() - x0;
+                    x0 = event.getX();
                 }
                 invalidate();
                 break;
@@ -202,7 +207,10 @@ public class GalleryView extends View {
             return null;
         }
     }
+    class ImageCache
+    {
 
+    }
     public class Image {
         private int id;
         private String title;
