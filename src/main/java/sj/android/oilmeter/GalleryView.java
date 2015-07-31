@@ -15,11 +15,18 @@ import android.provider.MediaStore;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.InputMismatchException;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by Administrator on 2015/7/30.
@@ -32,12 +39,12 @@ public class GalleryView extends View {
     public GalleryView(Context context, AttributeSet attrs) {
         super(context, attrs);
         mContext = context;
+        mAsyncTask.execute();
     }
 
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        mAsyncTask.execute();
     }
 
     AsyncTask<String, Integer, String> mAsyncTask = new AsyncTask<String, Integer, String>() {
@@ -83,6 +90,8 @@ public class GalleryView extends View {
         @Override
         protected void onPostExecute(String s) {
             super.onPostExecute(s);
+            new Thread(new LoadBitmapCacheRunnable()).start();
+
         }
 
         @Override
@@ -101,80 +110,76 @@ public class GalleryView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
+        if (itemWidth == 0)
+            itemWidth = getMeasuredWidth() / 3;
         Paint paint = new Paint();
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.CLEAR));
         canvas.drawPaint(paint);
         paint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.SRC));
 
-        if (itemWidth == 0)
-            itemWidth = getMeasuredWidth() / 3;
         paint.setAntiAlias(true);    //
         float left = scrollX, top = 0;
         top = getMeasuredHeight() / 3;
-        int position = mCurrentPosition;
-        if (progress != -1) {
-            for (int i = 0; i < 3; i++) {
-                if (position >= 0 && position <= progress) {
-                    Log.d("husj", "onDraw " + position);
-                    Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
-                    if (bb != null) {
-                        canvas.drawBitmap(bb, left, top, paint);
-                        left += bb.getWidth();
-//                    top += bb.getHeight();
-                    }
-                    bb.recycle();
-                }
-                position++;
-            }
-            if (scrollX > 0) {
-                position = mCurrentPosition - 1;
-                if (position >= 0 && position <= progress) {
-                    Log.d("husj", "onDraw " + position);
-                    Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
-                    if (bb != null) {
-                        canvas.drawBitmap(bb, scrollX - itemWidth, top, paint);
-                        left += bb.getWidth();
-                    }
-                    bb.recycle();
-                }
-            } else if (scrollX < 0) {
-                if (position >= 0 && position <= progress) {
-                    Log.d("husj", "onDraw " + position);
-                    Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
-                    if (bb != null) {
-                        canvas.drawBitmap(bb, left, top, paint);
-                        left += bb.getWidth();
-                    }
-                    bb.recycle();
-                }
-            }
-
+        int position = 0;
+        Log.d("husj", "scrollX  " + scrollX);
+        if (scrollX > 0) {//to right
+            left = scrollX - itemWidth;
+        } else if (scrollX < 0) {//to left
+            left = scrollX;
         }
+        for (int i = 0; i < 4; i++) {
+            Bitmap bb = mDoubleLink.get(i);
+            if (bb != null) {
+                canvas.drawBitmap(bb, left, top, paint);
+                left += bb.getWidth();
+            }
+        }
+
+
     }
+
 
     float x0, y0;
     float scrollX = 0;
     float lastScrollX = 0;
+    private VelocityTracker vTracker = null;
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
+                if (vTracker == null) {
+                    vTracker = VelocityTracker.obtain();
+                } else {
+                    vTracker.clear();
+                }
+                vTracker.addMovement(event);
                 x0 = event.getX();
                 break;
             case MotionEvent.ACTION_MOVE:
+                vTracker.addMovement(event);
+                vTracker.computeCurrentVelocity(1000);
+
                 if (Math.abs(scrollX) >= itemWidth) {
                     Log.d("husj", "scrollX" + scrollX);
                     Log.d("husj", "itemWidth" + itemWidth);
 
-                    if (scrollX > 0) {
+                    if (vTracker.getXVelocity() > 0) {
                         Log.d("husj", "mCurrentPosition--");
-                        if (mCurrentPosition > 0)
+                        if (mCurrentPosition > 0) {
                             mCurrentPosition--;
+                            synchronized (waitObject) {
+                                waitObject.notify();
+                            }
+                        }
                     } else {
                         Log.d("husj", "mCurrentPosition++");
-                        if (mCurrentPosition < progress)
+                        if (mCurrentPosition < progress) {
                             mCurrentPosition++;
+                            synchronized (waitObject) {
+                                waitObject.notify();
+                            }
+                        }
                     }
                     scrollX = 0;
                 } else {
@@ -188,6 +193,60 @@ public class GalleryView extends View {
         }
         return true;
 
+    }
+
+    DoubleLink<Bitmap> mDoubleLink = new DoubleLink<Bitmap>(4);
+    final Object waitObject = new Object();
+
+    class LoadBitmapCacheRunnable implements Runnable {
+        private int mPosition = -1;
+
+        @Override
+        public void run() {
+            while (true) {
+                if (itemWidth == 0)
+                    itemWidth = getMeasuredWidth() / 3;
+                Log.d("husj", "mPosition " + mPosition);
+                Log.d("husj", "mCurrentPosition " + mCurrentPosition);
+
+                if (mPosition < mCurrentPosition) {
+                    int position = mPosition;
+                    while (++position == mCurrentPosition) {
+                        mDoubleLink.deleteFirst();
+                    }
+                    int p = 0;
+                    do {
+                        int bbb = mCurrentPosition + p++;
+                        Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[bbb].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
+                        mDoubleLink.addLast(bb);
+                    } while (p++ < 4);
+                } else if (mPosition > mCurrentPosition) {
+                    int position = mPosition;
+                    while (--position == mCurrentPosition) {
+                        mDoubleLink.deleteLast();
+                    }
+                    int p = 0;
+                    do {
+                        Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[mCurrentPosition + p].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
+                        mDoubleLink.addFirst(bb);
+                    } while (p++ < 4);
+                } else {
+
+                }
+                mPosition = mCurrentPosition;
+                postInvalidate();
+
+                try {
+                    Log.d("husj", "waitObject ");
+                    synchronized (waitObject) {
+                        waitObject.wait();
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+        }
     }
 
     private Bitmap resizeBitmap(Bitmap bitmap, int w, int h) {
@@ -207,10 +266,49 @@ public class GalleryView extends View {
             return null;
         }
     }
-    class ImageCache
-    {
 
+    class DoubleLink<T> {
+        int capacity;
+        LinkedList<T> bitmapCache = new LinkedList<T>();
+
+        public DoubleLink(int num) {
+            capacity = num;
+
+        }
+
+        public int size() {
+            return bitmapCache.size();
+        }
+
+        public void addFirst(T data) {
+            if (capacity == bitmapCache.size()) return;
+            bitmapCache.offerFirst(data);
+        }
+
+        public void addLast(T data) {
+            if (capacity == bitmapCache.size()) return;
+            bitmapCache.offer(data);
+        }
+
+        public T deleteFirst() {
+            if (bitmapCache.size() == 0) return null;
+            if (bitmapCache.get(0) == null) return null;
+            return bitmapCache.pop();
+        }
+
+        public T deleteLast() {
+            if (bitmapCache.size() == 0) return null;
+            if (bitmapCache.get(bitmapCache.size() - 1) == null) return null;
+
+            return bitmapCache.pollLast();
+        }
+
+        public T get(int position) {
+            if (position >= size()) return null;
+            return bitmapCache.get(position);
+        }
     }
+
     public class Image {
         private int id;
         private String title;

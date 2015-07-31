@@ -61,7 +61,7 @@ public class OilMeterView2 extends ImageView {
     @Override
     protected void onFinishInflate() {
         super.onFinishInflate();
-        setScaleType(ImageView.ScaleType.MATRIX);   //required
+        setScaleType(ScaleType.MATRIX);   //required
         mBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.point);
         if (!isRunning) {
             isRunning = true;
