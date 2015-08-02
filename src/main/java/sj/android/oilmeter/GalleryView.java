@@ -121,19 +121,24 @@ public class GalleryView extends View {
         float left = scrollX, top = 0;
         top = getMeasuredHeight() / 3;
         int position = 0;
-        Log.d("husj", "scrollX  " + scrollX);
+
         if (scrollX > 0) {//to right
             left = scrollX - itemWidth;
         } else if (scrollX < 0) {//to left
             left = scrollX;
         }
-        for (int i = 0; i < 4; i++) {
-            Bitmap bb = mDoubleLink.get(i);
-            if (bb != null) {
-                canvas.drawBitmap(bb, left, top, paint);
-                left += bb.getWidth();
-            }
+        String xx = "";
+        if (mDoubleLink.size() == 3 && mDoubleLink.get(0).index > mCurrentPosition) {
+            left = scrollX;
         }
+        for (int i = 0; i < 4; i++) {
+            if (mDoubleLink.get(i) == null) continue;
+            Bitmap bb = mDoubleLink.get(i).mBitmap;
+            xx = xx + "{" + left + " " + mDoubleLink.get(i).index + "}";
+            canvas.drawBitmap(bb, left, top, paint);
+            left += bb.getWidth();
+        }
+        Log.d("husj", "Bitmap " + xx);
 
 
     }
@@ -159,11 +164,14 @@ public class GalleryView extends View {
             case MotionEvent.ACTION_MOVE:
                 vTracker.addMovement(event);
                 vTracker.computeCurrentVelocity(1000);
+                scrollX += event.getX() - x0;
+                x0 = event.getX();
+//                Log.d("husj", "" + scrollX + " " + lastScrollX);
 
-                if (Math.abs(scrollX) >= itemWidth) {
-                    Log.d("husj", "scrollX" + scrollX);
-                    Log.d("husj", "itemWidth" + itemWidth);
+                if (Math.abs(scrollX) >= itemWidth || (lastScrollX != 0 && (lastScrollX > 0) ^ (scrollX > 0))) {
+                    Log.d("husj", "scrollX 1 " + scrollX);
 
+                    Log.d("husj", "scrollX 2 " + scrollX);
                     if (vTracker.getXVelocity() > 0) {
                         Log.d("husj", "mCurrentPosition--");
                         if (mCurrentPosition > 0) {
@@ -182,10 +190,8 @@ public class GalleryView extends View {
                         }
                     }
                     scrollX = 0;
-                } else {
-                    scrollX += event.getX() - x0;
-                    x0 = event.getX();
                 }
+                lastScrollX = scrollX;
                 invalidate();
                 break;
             case MotionEvent.ACTION_UP:
@@ -195,7 +201,12 @@ public class GalleryView extends View {
 
     }
 
-    DoubleLink<Bitmap> mDoubleLink = new DoubleLink<Bitmap>(4);
+    class BitmapInfo {
+        Bitmap mBitmap;
+        int index;
+    }
+
+    DoubleLink<BitmapInfo> mDoubleLink = new DoubleLink<BitmapInfo>(4);
     final Object waitObject = new Object();
 
     class LoadBitmapCacheRunnable implements Runnable {
@@ -208,30 +219,31 @@ public class GalleryView extends View {
                     itemWidth = getMeasuredWidth() / 3;
                 Log.d("husj", "mPosition " + mPosition);
                 Log.d("husj", "mCurrentPosition " + mCurrentPosition);
-
-                if (mPosition < mCurrentPosition) {
-                    int position = mPosition;
-                    while (++position == mCurrentPosition) {
-                        mDoubleLink.deleteFirst();
-                    }
-                    int p = 0;
-                    do {
-                        int bbb = mCurrentPosition + p++;
-                        Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[bbb].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
-                        mDoubleLink.addLast(bb);
-                    } while (p++ < 4);
+                if (mPosition >= 0 && mPosition < mCurrentPosition) {
+                    mDoubleLink.deleteFirst();
+                    int position = mCurrentPosition + 3;
+                    Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
+                    BitmapInfo info = new BitmapInfo();
+                    info.mBitmap = bb;
+                    info.index = position;
+                    mDoubleLink.addLast(info);
                 } else if (mPosition > mCurrentPosition) {
-                    int position = mPosition;
-                    while (--position == mCurrentPosition) {
-                        mDoubleLink.deleteLast();
+                    int position = mCurrentPosition;
+                    mDoubleLink.deleteLast();
+                    Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[position].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
+                    BitmapInfo info = new BitmapInfo();
+                    info.mBitmap = bb;
+                    info.index = position;
+                    mDoubleLink.addFirst(info);
+                } else if (mPosition == -1) {
+                    for (int i = 0; i < 4; i++) {
+                        int p = mCurrentPosition + i;
+                        Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[p].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
+                        BitmapInfo info = new BitmapInfo();
+                        info.mBitmap = bb;
+                        info.index = p;
+                        mDoubleLink.addLast(info);
                     }
-                    int p = 0;
-                    do {
-                        Bitmap bb = resizeBitmap(BitmapFactory.decodeFile(mData[mCurrentPosition + p].getPath()), (int) itemWidth, getMeasuredHeight() / 4);
-                        mDoubleLink.addFirst(bb);
-                    } while (p++ < 4);
-                } else {
-
                 }
                 mPosition = mCurrentPosition;
                 postInvalidate();
