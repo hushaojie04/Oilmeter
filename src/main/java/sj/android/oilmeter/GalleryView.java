@@ -55,8 +55,8 @@ public class GalleryView extends View {
                 Cursor cursor = context.getContentResolver().query(
                         MediaStore.Images.Media.EXTERNAL_CONTENT_URI, null, null,
                         null, null);
-                mData = new Image[cursor.getCount()];
                 if (cursor != null) {
+                    mData = new Image[cursor.getCount()];
                     while (cursor.moveToNext()) {
                         int id = cursor
                                 .getInt(cursor

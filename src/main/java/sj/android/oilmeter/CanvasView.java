@@ -26,21 +26,49 @@ public class CanvasView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        createPOLYGASKET(canvas, 5,5, new Vector2D(400, 400, 0, 200));
+        switch (mType) {
+            case 1:
+                createPOLYGASKET(canvas, 5, 5, new Vector2D(400, 400, 0, 200));
+                break;
+            case 2:
+                createPOLYGASKET(canvas, 3, 6, new Vector2D(400, 400, 0, 200));
+                break;
+            case 3:
+                createStar(canvas, 5, new Vector2D(400, 400, 0, 200));
+                break;
+            case 4:
+                createWheel(canvas, new Vertex2D(300, 300), 100, 20);
+                break;
+            case 5:
+                create5Golden(canvas, new Vertex2D(300, 300));
+                break;
+            case 6:
+                createPolygon(canvas, 5, new Vector2D(400, 400, 0, 200));
+                break;
+            case 7:
+                createSpiral(canvas, 20, new Vector2D(400, 400, 0, 200));
+                break;
+        }
+    }
+
+    int mType = -1;
+
+    public void doDraw(int type) {
+        mType = type;
     }
 
     /**
      * 分形曲线，多边形，地垫
+     *
      * @param canvas
      * @param level
      * @param vector2D
      */
-    private void createPOLYGASKET(Canvas canvas,int n, int level, Vector2D vector2D) {
+    private void createPOLYGASKET(Canvas canvas, int n, int level, Vector2D vector2D) {
         if (level == 0) {
             createPolygon(canvas, n, vector2D);
         } else {
-            for(int i=0;i<n;i++)
-            {
+            for (int i = 0; i < n; i++) {
                 vector2D.resize(1 / 2f);
                 createPOLYGASKET(canvas, n, level - 1, vector2D);
                 vector2D.resize(2f);
@@ -87,6 +115,7 @@ public class CanvasView extends View {
         canvas.drawLine(rect.left, rect.top, rect.right, rect.bottom, paint);
 //        }
     }
+
     /*
        多角星
      */
@@ -101,6 +130,7 @@ public class CanvasView extends View {
             canvas.drawLine(rect.left, rect.top, rect.right, rect.bottom, paint);
         }
     }
+
     /*
      轮形
      */
@@ -121,6 +151,7 @@ public class CanvasView extends View {
             Log.d("husj", "angle=" + angle);
         }
     }
+
     /*
     玫瑰花结
      */
@@ -139,6 +170,7 @@ public class CanvasView extends View {
         }
 
     }
+
     /*
       玫瑰花
        */
@@ -165,6 +197,7 @@ public class CanvasView extends View {
         }
 
     }
+
     /*
     正多边形
      */
@@ -180,6 +213,7 @@ public class CanvasView extends View {
             vector2D.turn((float) (2 * Math.PI / n));
         }
     }
+
     /*
     螺旋
      */

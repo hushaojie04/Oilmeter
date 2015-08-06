@@ -1,3 +1,13 @@
 <resources>
     <string name="app_name">OilMeter</string>
+        <string-array name="jihe">
+            <item>none</item>
+            <item>五角形地垫</item>
+            <item>三角形地垫</item>
+            <item>五角星</item>
+            <item>轮形</item>
+            <item>玫瑰结</item>
+            <item>多边形</item>
+            <item>螺旋</item>
+        </string-array>
 </resources>
