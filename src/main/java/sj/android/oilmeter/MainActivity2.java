@@ -15,8 +15,8 @@ public class MainActivity2 extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.main_layout2);
-        GalleryView view = (GalleryView) findViewById(R.id.galleryView);
+        setContentView(R.layout.main_layout3);
+//        GalleryView view = (GalleryView) findViewById(R.id.galleryView);
     }
 
 
